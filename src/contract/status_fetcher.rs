@@ -69,8 +69,6 @@ impl Web3Transport {
                     ..(storage_content_str.len() - byte_low * 2)]
             )
         };
-        println!("get_storage");
-        println!("{}", &contract_addr);
         Ok(contract_addr)
     }
 }

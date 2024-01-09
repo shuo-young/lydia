@@ -12,3 +12,6 @@ hex = "0.4"                                         # For hex string manipulatio
 web3 = "0.19.0"
 csv = "1.1"
 serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+env_logger = "0.10.1"
+tracing = "0.1"

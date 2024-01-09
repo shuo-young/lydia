@@ -1,3 +1,4 @@
+use log::{error, info};
 use std::collections::HashMap;
 use std::io::{self};
 use std::process::Command;
@@ -12,6 +13,8 @@ use std::mem;
 
 use crate::contract::data_structure;
 use crate::contract::status_fetcher::Web3Transport;
+
+use super::data_structure::ExternalCallData;
 
 const CONTRACT_PATH: &str = "./gigahorse-toolchain/contracts/";
 const CONTRACT_DIR: &str = "./contracts/";
@@ -34,19 +37,6 @@ struct ExternalCall {
     caller_func_sign: String,
     caller_addr: String,
 }
-
-// impl ExternalCall {
-//     pub fn new() -> Self {
-//         ExternalCall {
-//             target_logic_addr: String::new(),
-//             target_storage_addr: String::new(),
-//             target_func_sign: String::new(),
-//             current_addr: String::new(),
-//             current_func_sign: String::new(),
-//             call_site: String::new(),
-//         }
-//     }
-// }
 
 #[allow(dead_code)]
 pub struct Contract {
@@ -78,7 +68,6 @@ pub struct Contract {
     func_arg_callee_df: Vec<data_structure::FuncArgCallee>,
     constant_func_sign_df: Vec<data_structure::ConstantFuncSign>,
     proxy_func_sign_df: Vec<data_structure::ProxyFuncSign>,
-    external_calls_df: Vec<data_structure::ExternalCallData>,
 }
 
 #[allow(dead_code)]
@@ -96,7 +85,6 @@ impl Contract {
         // Initialize a Contract instance
         let formatted_logic_addr = Self::format_addr(&logic_addr);
         let formatted_storage_addr = Self::format_addr(&storage_addr);
-        println!("{}", formatted_logic_addr);
         Contract {
             platform,
             logic_addr: formatted_logic_addr,
@@ -124,7 +112,6 @@ impl Contract {
             func_arg_callee_df: Vec::new(),
             constant_func_sign_df: Vec::new(),
             proxy_func_sign_df: Vec::new(),
-            external_calls_df: Vec::new(),
         }
     }
 
@@ -167,9 +154,8 @@ impl Contract {
 
     async fn download_bytecode(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.set_url();
-        println!("{}", self.url.to_string());
         if self.url.is_empty() {
-            println!("URL is empty");
+            error!("URL is empty");
             return Ok(());
         }
         let loc: String = format!("{}{}.hex", CONTRACT_PATH, self.logic_addr);
@@ -220,7 +206,7 @@ impl Contract {
         let status = Command::new("sh").arg("-c").arg(command).status()?;
 
         if !status.success() {
-            eprintln!("Command executed with failing error code");
+            error!("Command executed with failing error code");
         }
         // binding functions
         let _ = self.set_func();
@@ -240,6 +226,7 @@ impl Contract {
             let func_sign_clone = self.func_sign.clone();
             let _ = self.set_external_calls(&func_clone, &func_sign_clone).await;
         }
+        info!("contract external calls{:?}", self.external_calls);
         Ok(())
     }
 
@@ -294,10 +281,16 @@ impl Contract {
         self.storage_callee_df = storage_callee_df;
         self.storage_callee_proxy_df = storage_callee_proxy_df;
         self.func_arg_callee_df = func_arg_callee_df;
-        println!("{:?}", self.constant_callee_df);
-        println!("{:?}", self.storage_callee_df);
-        println!("{:?}", self.storage_callee_proxy_df);
-        println!("{:?}", self.func_arg_callee_df);
+        info!("constant callee info: {:?}", self.constant_callee_df);
+        info!("storage callee info: {:?}", self.storage_callee_df);
+        info!(
+            "storage callee for proxy info: {:?}",
+            self.storage_callee_proxy_df
+        );
+        info!(
+            "function argument callee info: {:?}",
+            self.func_arg_callee_df
+        );
         Ok(())
     }
 
@@ -324,8 +317,11 @@ impl Contract {
         // Put the vectors back
         self.constant_func_sign_df = constant_func_sign_df;
         self.proxy_func_sign_df = proxy_func_sign_df;
-        println!("{:?}", self.constant_func_sign_df);
-        println!("{:?}", self.proxy_func_sign_df);
+        info!(
+            "constant function signature: {:?}",
+            self.constant_func_sign_df
+        );
+        info!("proxy function signature: {:?}", self.proxy_func_sign_df);
         Ok(())
     }
 
@@ -357,7 +353,7 @@ impl Contract {
             "{}{}/out/Leslie_ExternalCallInfo.csv",
             TEMP_PATH, self.logic_addr
         );
-        println!("{}", &loc_external_call);
+        let mut external_calls_df = Vec::<ExternalCallData>::new();
         if fs::metadata(&loc_external_call)
             .map(|m| m.len() > 0)
             .unwrap_or(false)
@@ -377,19 +373,17 @@ impl Contract {
                         num_arg: record[4].to_string(),
                         num_ret: record[5].to_string(),
                     };
-                    self.external_calls_df.push(external_call)
+                    external_calls_df.push(external_call)
                 }
             }
         }
-        println!("externalcalls");
-        println!("{:?}", self.external_calls_df);
-        for external_call_data in &self.external_calls_df {
+        for external_call_data in &external_calls_df {
             let mut external_call = ExternalCall {
                 target_logic_addr: String::new(),
                 target_storage_addr: String::new(),
                 target_func_sign: String::new(),
                 caller_addr: self.caller.clone(),
-                caller_func_sign: self.func_sign.clone(),
+                caller_func_sign: func_sign.to_string(),
                 call_site: external_call_data.call_stmt.clone(),
             };
             // Logic to find and set the logic address
@@ -410,7 +404,6 @@ impl Contract {
             {
                 let contract_address: Address =
                     self.storage_addr.parse().expect("Invalid contract address");
-                println!("{}", &contract_address);
                 let transport = Web3Transport::new(&self.url).await?;
                 external_call.target_logic_addr = transport
                     .get_storage(
@@ -430,7 +423,6 @@ impl Contract {
             {
                 let contract_storage_address: Address =
                     self.storage_addr.parse().expect("Invalid contract address");
-                println!("{}", &contract_storage_address);
                 let transport = Web3Transport::new(&self.url).await?;
                 external_call.target_logic_addr = transport
                     .get_storage(
@@ -510,6 +502,7 @@ impl Contract {
                     self.func_sign_dict.insert(func, func_sign);
                 }
             }
+            info!("function signature dict{:?}", self.func_sign_dict);
 
             if !self.origin {
                 self.func = self
@@ -523,8 +516,8 @@ impl Contract {
                         }
                     })
                     .unwrap_or(String::new());
-                println!("func_sign: {}", self.func_sign);
-                println!("func: {}", self.func);
+                info!("func_sign: {}", self.func_sign);
+                info!("func: {}", self.func);
                 if self.func.is_empty() {
                     self.func = self
                         .func_sign_dict
@@ -567,13 +560,11 @@ impl Contract {
                         };
 
                         self.call_arg_vals.insert(arg_index, value);
-                        print!("{:?}", self.call_arg_vals);
+                        info!("call arg values: {:?}", self.call_arg_vals);
                     }
                 }
             }
         }
         Ok(())
     }
-
-    // Other methods...
 }
