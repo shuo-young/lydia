@@ -1,7 +1,7 @@
 use crate::{contract::contract::Contract, Source};
 use std::collections::{HashMap, HashSet};
 
-#[allow(unused_attributes)]
+#[allow(dead_code)]
 pub struct CallGraph {
     output: String,
     visited_contracts: HashSet<String>,

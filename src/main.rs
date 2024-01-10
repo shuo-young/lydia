@@ -20,32 +20,8 @@ struct Source {
     level: u32,
 }
 
-impl Source {
-    pub fn new(
-        platform: String,
-        logic_addr: String,
-        storage_addr: String,
-        func_sign: String,
-        block_number: u64,
-        caller: String,
-        caller_func_sign: String,
-        call_site: String,
-        level: u32,
-    ) -> Source {
-        Source {
-            platform: platform,
-            logic_addr: logic_addr,
-            storage_addr: storage_addr,
-            func_sign: func_sign,
-            block_number: block_number,
-            caller: caller,
-            caller_func_sign: caller_func_sign,
-            call_site: call_site,
-            level: level,
-        }
-    }
-}
-
+#[allow(unused_mut)]
+#[allow(unused_variables)]
 #[tokio::main]
 async fn main() {
     env_logger::init();
