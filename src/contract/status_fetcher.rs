@@ -1,5 +1,7 @@
+use log::info;
 use std::error::Error;
 use std::str::FromStr;
+use std::time::Instant;
 use web3::{
     transports::{Http, WebSocket},
     types::{H160, U256},
@@ -41,6 +43,7 @@ impl Web3Transport {
         byte_low: &str,
         byte_high: &str,
     ) -> Result<String, Box<dyn Error>> {
+        let start = Instant::now();
         let slot_index =
             U256::from_str(slot_index).map_err(|e| format!("Failed to parse slot_index: {}", e))?;
 
@@ -69,6 +72,8 @@ impl Web3Transport {
                     ..(storage_content_str.len() - byte_low * 2)]
             )
         };
+        let duration = start.elapsed();
+        info!("read storage consumes {:?}", duration);
         Ok(contract_addr)
     }
 }

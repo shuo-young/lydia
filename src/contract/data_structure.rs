@@ -1,4 +1,5 @@
 use csv::StringRecord;
+use serde::Deserialize;
 #[derive(Debug)]
 #[allow(dead_code)]
 pub(crate) struct ConstantCallee {
@@ -12,7 +13,7 @@ impl From<StringRecord> for ConstantCallee {
         ConstantCallee {
             func: record[0].to_string(),
             call_stmt: record[1].to_string(),
-            callee: record[3].to_string(),
+            callee: record[2].to_string(),
         }
     }
 }
@@ -113,11 +114,29 @@ impl From<StringRecord> for ProxyFuncSign {
 
 #[derive(Debug)]
 #[allow(dead_code)]
+#[derive(Eq, Hash, PartialEq, Deserialize)]
 pub(crate) struct ExternalCallData {
+    #[serde(rename = "0")]
     pub(crate) func: String,
+    #[serde(rename = "1")]
     pub(crate) call_stmt: String,
+    #[serde(rename = "2")]
     pub(crate) call_op: String,
+    #[serde(rename = "3")]
     pub(crate) callee_var: String,
+    #[serde(rename = "4")]
     pub(crate) num_arg: String,
+    #[serde(rename = "5")]
     pub(crate) num_ret: String,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub(crate) struct ExternalCall {
+    pub(crate) target_logic_addr: String,
+    pub(crate) target_storage_addr: String,
+    pub(crate) target_func_sign: String,
+    pub(crate) call_site: String,
+    pub(crate) caller_func_sign: String,
+    pub(crate) caller_addr: String,
 }
