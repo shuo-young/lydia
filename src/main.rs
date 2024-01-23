@@ -1,11 +1,11 @@
 mod contract;
 mod flow;
+mod outputter;
 use crate::contract::contract::Contract;
 use crate::flow::flow_analysis::FlowAnalysis;
 mod graph;
-mod output;
 use crate::graph::call_graph::CallGraph;
-use crate::output::result_structure::{
+use crate::outputter::result_structure::{
     ExternalCall, OpCreation, Overlap, Result, SemanticFeatures,
 };
 #[allow(unused_imports)]
