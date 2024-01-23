@@ -1,29 +1,34 @@
 use crate::{contract::contract::Contract, Source};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-
+use std::rc::Rc;
 #[allow(dead_code)]
-pub struct CallGraph {
+pub struct CallGraph<'a> {
     output: String,
     visited_contracts: HashSet<String>,
     visited_funcs: HashSet<String>,
-    max_level: u32,
+    max_level: i32,
     platform: String,
-    contracts: HashMap<String, Contract>,
+    contracts: &'a mut HashMap<String, Contract>,
 }
-impl CallGraph {
-    pub fn new(platform: String) -> CallGraph {
+impl<'a> CallGraph<'a> {
+    pub fn new(platform: String, contracts: &'a mut HashMap<String, Contract>) -> CallGraph {
         CallGraph {
             output: String::new(),
             visited_contracts: HashSet::new(),
             visited_funcs: HashSet::new(),
             max_level: 0,
             platform,
-            contracts: HashMap::new(),
+            contracts: contracts,
         }
     }
 
     pub fn get_output(&self) -> &str {
         &self.output
+    }
+
+    pub fn get_contracts(&self) -> &HashMap<String, Contract> {
+        &self.contracts
     }
 
     pub async fn construct_cross_contract_call_graph(
@@ -68,8 +73,6 @@ impl CallGraph {
             if self.contracts.contains_key(&temp_key) {
                 continue;
             }
-
-            self.visited_contracts.insert(temp.logic_addr.clone());
             self.visited_funcs.insert(temp.func_sign.clone());
 
             let mut new_contract = Contract::new(

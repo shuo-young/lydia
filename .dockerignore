@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.temp
+cache
+.git
+Dockerfile
+output
+.vscode
+target

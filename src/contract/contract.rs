@@ -37,7 +37,7 @@ pub struct Contract {
     block_number: u64,
     pub(crate) caller: String,
     pub(crate) call_site: String,
-    pub(crate) level: u32,
+    pub(crate) level: i32,
     origin: bool,
     func: String,
     func_sign_dict: HashMap<String, String>,
@@ -67,7 +67,7 @@ impl Contract {
         block_number: u64,
         caller: String,
         call_site: String,
-        level: u32,
+        level: i32,
     ) -> Contract {
         // Initialize a Contract instance
         let formatted_logic_addr = Self::format_addr(&logic_addr);

@@ -1,12 +1,26 @@
 mod contract;
+mod flow;
 use crate::contract::contract::Contract;
+use crate::flow::flow_analysis::FlowAnalysis;
 mod graph;
+mod output;
 use crate::graph::call_graph::CallGraph;
+use crate::output::result_structure::{
+    ExternalCall, OpCreation, Overlap, Result, SemanticFeatures,
+};
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled, Level};
+use serde_json;
+use std::borrow::BorrowMut;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::rc::Rc;
 use std::time::Instant;
 
+const JSON_PATH: &str = "./output/";
 #[derive(Debug)]
 struct Source {
     platform: String,
@@ -17,7 +31,7 @@ struct Source {
     caller: String,
     caller_func_sign: String,
     call_site: String,
-    level: u32,
+    level: i32,
 }
 
 #[allow(unused_mut)]
@@ -65,18 +79,19 @@ async fn main() {
 
     let external_call_in_func_signature = external_call_in_func_signature.clone();
 
-    // let visited_contracts: Vec<String> = Vec::new();
-    // let visited_funcs: Vec<String> = Vec::new();
+    let visited_contracts: Vec<String> = Vec::new();
+    let visited_funcs: Vec<String> = Vec::new();
+
+    let mut call_path: Vec<String> = Vec::new();
     // let m_call_depth: u32 = 0;
     // let call_graph_str: String = String::new();
 
-    // let mut contracts: Vec<HashMap<String, Contract>> = Vec::new();
-
-    // let mut external_call_in_func_signature = mem::take(external_call_in_func_signature);
+    let mut contracts = HashMap::new();
     if input_contract.is_createbin().clone() {
     } else {
         let mut max_call_depth: u32 = 0;
-        for func_sign in external_call_in_func_signature.into_iter() {
+        for func_sign in external_call_in_func_signature.clone().into_iter() {
+            // let mut contracts_mut = contracts.borrow_mut();
             println!("{}", func_sign);
             let source = Source {
                 platform: platform.to_string(),
@@ -89,7 +104,8 @@ async fn main() {
                 call_site: "".to_string(),
                 level: 0,
             };
-            let mut cross_contract_call_graph = CallGraph::new(platform.to_string());
+            let mut cross_contract_call_graph =
+                CallGraph::new(platform.to_string(), &mut contracts);
 
             if let Err(e) = cross_contract_call_graph
                 .construct_cross_contract_call_graph(source)
@@ -97,11 +113,69 @@ async fn main() {
             {
                 eprintln!("An error occurred during call graph construction: {}", e);
             };
-            // cross_contract_call_graph.construct_cross_contract_call_graph(source);
             let call_graph_str = cross_contract_call_graph.get_output();
+            call_path.push(call_graph_str.to_string());
             println!("{}", call_graph_str);
         }
+        info!("length of contracts: {}", contracts.len());
     }
+    let mut result = Result {
+        is_attack: false,
+        warning: String::from("medium"),
+        attack_matrix: HashMap::new(),
+        analysis_loc: String::new(),
+        platform: String::from("ETH"),
+        block_number: 16000000, // Assuming block_number is provided elsewhere in the code
+        time: None,
+        semantic_features: SemanticFeatures {
+            op_creation: OpCreation {
+                op_multicreate: false,
+                op_solecreate: false,
+            },
+            op_selfdestruct: false,
+            op_env: false,
+        },
+        external_call: ExternalCall {
+            externalcall_inhook: false,
+            externalcall_infallback: false,
+            hooks_focused: vec![
+                "tokensReceived".to_string(),
+                // ... add other strings here
+            ],
+        },
+        call_paths: Vec::new(),
+        visited_contracts: Vec::new(),
+        visited_contracts_num: 0,
+        visited_funcs: Vec::new(),
+        visited_funcs_num: 0,
+        max_call_depth: 0,
+        contract_funcsigs: Vec::new(),
+        contract_funcsigs_external_call: Vec::new(),
+        sensitive_callsigs: Vec::new(),
+        overlap: Overlap {
+            has_overlap: false,
+            overlap_external_call: Vec::new(),
+        },
+        reentrancy_path_info: std::collections::HashMap::new(),
+    };
+
+    let mut detector = FlowAnalysis::new(
+        &contracts,
+        func_sign_list.clone(),
+        external_call_in_func_signature,
+        visited_contracts,
+        visited_funcs,
+    );
+
+    let (res_bool, res) = detector.detect();
+    result.is_attack = res_bool;
+    result.attack_matrix = res;
+    result.call_paths = call_path;
+
+    let serialized = serde_json::to_string_pretty(&result).unwrap();
+    let mut file = File::create(format!("{}{}.json", JSON_PATH, logic_address)).unwrap();
+    file.write(serialized.as_bytes()).unwrap();
+
     let duration = start.elapsed();
     info!("analyze contract {} consumes {:?}", logic_address, duration);
 }

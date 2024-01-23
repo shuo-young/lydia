@@ -140,3 +140,62 @@ pub(crate) struct ExternalCall {
     pub(crate) caller_func_sign: String,
     pub(crate) caller_addr: String,
 }
+
+#[derive(Debug)]
+pub struct SensitiveOpOfBadRandomnessAfterExternalCall {
+    pub func_sign: String,
+    pub call_stmt: String,
+    pub sensitive_var: String,
+    pub source_op: String,
+}
+
+impl From<StringRecord> for SensitiveOpOfBadRandomnessAfterExternalCall {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SensitiveOpOfBadRandomnessAfterExternalCall
+        SensitiveOpOfBadRandomnessAfterExternalCall {
+            func_sign: record[0].to_string(),
+            call_stmt: record[1].to_string(),
+            sensitive_var: record[2].to_string(),
+            source_op: record[3].to_string(),
+        }
+    }
+}
+
+pub struct SensitiveOpOfDoSAfterExternalCall {
+    pub func_sign: String,
+    pub call_stm: String,
+    pub call_ret_var: String,
+    pub call_ret_index: String,
+    pub sensitive_var: String,
+}
+
+impl From<StringRecord> for SensitiveOpOfDoSAfterExternalCall {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SensitiveOpOfDoSAfterExternalCall
+        SensitiveOpOfDoSAfterExternalCall {
+            func_sign: record[0].to_string(),
+            call_stm: record[1].to_string(),
+            call_ret_var: record[2].to_string(),
+            call_ret_index: record[3].to_string(),
+            sensitive_var: record[4].to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TaintedCallArg {
+    pub func_sign: String,
+    pub call_stmt: String,
+    pub call_arg_index: String,
+}
+
+impl From<StringRecord> for TaintedCallArg {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create TaintedCallArg
+        TaintedCallArg {
+            func_sign: record[0].to_string(),
+            call_stmt: record[1].to_string(),
+            call_arg_index: record[2].to_string(),
+        }
+    }
+}

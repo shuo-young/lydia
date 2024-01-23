@@ -810,6 +810,7 @@ dependencies = [
  "log",
  "reqwest",
  "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "web3",
