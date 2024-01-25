@@ -62,7 +62,7 @@ impl<'a> CallGraph<'a> {
                 indent = temp.level as usize
             );
             self.output.push_str(&format!(
-                "{:indent$}{}_{}_{} -> {}_{}",
+                "{:indent$}{}_{}_{} -> {}_{}\n",
                 "",
                 temp.caller,
                 temp.caller_func_sign,

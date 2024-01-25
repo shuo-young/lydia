@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::flow::flow_analysis::{ReachableSiteInfo, ReenterInfo};
+
 #[derive(Serialize, Deserialize)]
 pub struct Result {
     pub is_attack: bool,
@@ -23,7 +25,7 @@ pub struct Result {
     pub contract_funcsigs_external_call: Vec<String>,
     pub sensitive_callsigs: Vec<String>,
     pub overlap: Overlap,
-    pub reentrancy_path_info: HashMap<String, String>,
+    pub reentrancy_path_info: HashMap<String, PathInfo>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -48,4 +50,10 @@ pub struct ExternalCall {
 pub struct Overlap {
     pub has_overlap: bool,
     pub overlap_external_call: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PathInfo {
+    pub victim_call: Vec<ReachableSiteInfo>,
+    pub attacker_reenter: Vec<ReenterInfo>,
 }

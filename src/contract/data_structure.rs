@@ -337,3 +337,131 @@ impl From<StringRecord> for FuncArgToFuncRet {
         }
     }
 }
+
+pub struct EnvVarFlowsToTaintedVar {
+    pub func_sign: String,
+    pub env_var: String,
+    pub tainted_var: String,
+}
+
+impl From<StringRecord> for EnvVarFlowsToTaintedVar {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create EnvVarFlowsToTaintedVar
+        EnvVarFlowsToTaintedVar {
+            func_sign: record[0].to_string(),
+            env_var: record[1].to_string(),
+            tainted_var: record[2].to_string(),
+        }
+    }
+}
+
+pub struct OpCreateInLoop {
+    pub func_sign: String,
+    pub stmt: String,
+}
+
+impl From<StringRecord> for OpCreateInLoop {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create OpCreateInLoop
+        OpCreateInLoop {
+            func_sign: record[0].to_string(),
+            stmt: record[1].to_string(),
+        }
+    }
+}
+
+pub struct OpSoleCreate {
+    pub func_sign: String,
+    pub stmt: String,
+}
+
+impl From<StringRecord> for OpSoleCreate {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create OpSoleCreate
+        OpSoleCreate {
+            func_sign: record[0].to_string(),
+            stmt: record[1].to_string(),
+        }
+    }
+}
+
+pub struct OpSelfdestruct {
+    pub func_sign: String,
+    pub target: String,
+}
+
+impl From<StringRecord> for OpSelfdestruct {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create OpSelfdestruct
+        OpSelfdestruct {
+            func_sign: record[0].to_string(),
+            target: record[1].to_string(),
+        }
+    }
+}
+
+pub struct ExternalCallInHook {
+    pub call_stmt: String,
+    pub func_sign: String,
+}
+
+impl From<StringRecord> for ExternalCallInHook {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create ExternalCallInHook
+        ExternalCallInHook {
+            call_stmt: record[0].to_string(),
+            func_sign: record[1].to_string(),
+        }
+    }
+}
+
+pub struct ExternalCallInFallback {
+    pub call_stmt: String,
+    pub func_sign: String,
+}
+
+impl From<StringRecord> for ExternalCallInFallback {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create ExternalCallInFallback
+        ExternalCallInFallback {
+            call_stmt: record[0].to_string(),
+            func_sign: record[1].to_string(),
+        }
+    }
+}
+
+pub struct DoubleCallToSameContract {
+    pub func_sign: String,
+    pub callee: String,
+}
+
+impl From<StringRecord> for DoubleCallToSameContract {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create DoubleCallToSameContract
+        DoubleCallToSameContract {
+            func_sign: record[0].to_string(),
+            callee: record[1].to_string(),
+        }
+    }
+}
+
+pub struct DoubleCallToSameContractByStorage {
+    pub func_sign: String,
+    pub call_stmt: String,
+    pub call_ret_var: String,
+    pub call_ret_index: String,
+    pub sensitive_var: String,
+}
+
+impl From<StringRecord> for DoubleCallToSameContractByStorage {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create DoubleCallToSameContractByStorage
+        DoubleCallToSameContractByStorage {
+            func_sign: record[0].to_string(),
+            call_stmt: record[1].to_string(),
+            call_ret_var: record[2].to_string(),
+            call_ret_index: record[3].to_string(),
+            sensitive_var: record[4].to_string(),
+        }
+    }
+}

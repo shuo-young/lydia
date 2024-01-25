@@ -7,6 +7,7 @@ use crate::contract::data_structure::{
 };
 use csv::{ReaderBuilder, StringRecord};
 use log::{error, info};
+use serde::{Deserialize, Serialize};
 const OUTPUT_PATH: &str = "./gigahorse-toolchain/";
 const TEMP_PATH: &str = "./gigahorse-toolchain/.temp/";
 
@@ -21,14 +22,14 @@ pub struct ProgramPoint {
     pub program_point_type: String,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-struct ReachableSiteInfo {
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ReachableSiteInfo {
     caller: String,
     caller_callback_func_sign: String,
 }
 
-#[derive(Debug, PartialEq)]
-struct ReenterInfo {
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ReenterInfo {
     reenter_target: String,
     reenter_func_sign: String,
 }
@@ -42,8 +43,8 @@ pub struct FlowAnalysis<'a> {
     intra_callsigns: Vec<String>,
     sensitive_callsigns: Vec<String>,
     attack_matrix: HashMap<String, bool>,
-    victim_callback_info: HashMap<String, Vec<(String, String)>>,
-    attack_reenter_info: HashMap<String, Vec<(String, String)>>,
+    victim_callback_info: HashMap<String, Vec<ReachableSiteInfo>>,
+    attack_reenter_info: HashMap<String, Vec<ReenterInfo>>,
 }
 
 impl<'a> FlowAnalysis<'a> {
@@ -141,6 +142,33 @@ impl<'a> FlowAnalysis<'a> {
         return false;
     }
 
+    // tainted op analysis
+    pub fn tainted_env_call_arg(&self) -> bool {
+        for key in self.contracts.keys() {
+            if self.contracts[key].level == 0 {
+                let temp_address = key.split("_").collect::<Vec<&str>>()[2];
+                let temp_func_sign = key.split("_").collect::<Vec<&str>>()[3];
+                let mut df = Vec::new();
+                if let Err(err) = self.read_csv::<data_structure::EnvVarFlowsToTaintedVar>(
+                    &format!(
+                        "{}{}/out/Leslie_EnvVarFlowsToTaintedVar.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut df,
+                ) {
+                    error!("Error reading CSV: {}", err);
+                }
+                for tainted_env_call_arg in df {
+                    if tainted_env_call_arg.func_sign == temp_func_sign {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
     // other intra analysis
     pub fn op_multicreate_analysis(&self) -> bool {
         for key in self.contracts.keys() {
@@ -151,15 +179,13 @@ impl<'a> FlowAnalysis<'a> {
                     temp_func_sign = "__function_selector__";
                 }
                 let mut op_multicreate_analysis_df = Vec::new();
-                if let Err(err) = self
-                    .read_csv::<data_structure::SensitiveOpOfDoSAfterExternalCall>(
-                        &format!(
-                            "{}{}/out/Leslie_Op_CreateInLoop.csv",
-                            TEMP_PATH, temp_address
-                        ),
-                        &mut op_multicreate_analysis_df,
-                    )
-                {
+                if let Err(err) = self.read_csv::<data_structure::OpCreateInLoop>(
+                    &format!(
+                        "{}{}/out/Leslie_Op_CreateInLoop.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut op_multicreate_analysis_df,
+                ) {
                     error!("Error reading CSV: {}", err);
                 }
                 for op_multicreate_analysis in op_multicreate_analysis_df {
@@ -182,12 +208,10 @@ impl<'a> FlowAnalysis<'a> {
                     temp_func_sign = "__function_selector__";
                 }
                 let mut op_solecreate_analysis_df = Vec::new();
-                if let Err(err) = self
-                    .read_csv::<data_structure::SensitiveOpOfDoSAfterExternalCall>(
-                        &format!("{}{}/out/Leslie_Op_SoleCreate.csv", TEMP_PATH, temp_address),
-                        &mut op_solecreate_analysis_df,
-                    )
-                {
+                if let Err(err) = self.read_csv::<data_structure::OpSoleCreate>(
+                    &format!("{}{}/out/Leslie_Op_SoleCreate.csv", TEMP_PATH, temp_address),
+                    &mut op_solecreate_analysis_df,
+                ) {
                     error!("Error reading CSV: {}", err);
                 }
                 for op_solecreate_analysis in op_solecreate_analysis_df {
@@ -210,19 +234,125 @@ impl<'a> FlowAnalysis<'a> {
                     temp_func_sign = "__function_selector__";
                 }
                 let mut op_selfdestruct_analysis_df = Vec::new();
-                if let Err(err) = self
-                    .read_csv::<data_structure::SensitiveOpOfDoSAfterExternalCall>(
-                        &format!(
-                            "{}{}/out/Leslie_Op_Selfdestruct.csv",
-                            TEMP_PATH, temp_address
-                        ),
-                        &mut op_selfdestruct_analysis_df,
-                    )
-                {
+                if let Err(err) = self.read_csv::<data_structure::OpSelfdestruct>(
+                    &format!(
+                        "{}{}/out/Leslie_Op_Selfdestruct.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut op_selfdestruct_analysis_df,
+                ) {
                     error!("Error reading CSV: {}", err);
                 }
                 for op_selfdestruct_analysis in op_selfdestruct_analysis_df {
                     if op_selfdestruct_analysis.func_sign == temp_func_sign {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // external call related
+    pub fn externalcall_inhook(&self) -> bool {
+        for key in self.contracts.keys() {
+            if self.contracts[key].level == 0 {
+                let temp_address = key.split("_").collect::<Vec<&str>>()[2];
+                let temp_func_sign = key.split("_").collect::<Vec<&str>>()[3];
+                let mut df = Vec::new();
+                if let Err(err) = self.read_csv::<data_structure::ExternalCallInHook>(
+                    &format!(
+                        "{}{}/out/Leslie_ExternalCallInHook.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut df,
+                ) {
+                    error!("Error reading CSV: {}", err);
+                }
+                for externalcall_inhook in df {
+                    if externalcall_inhook.func_sign == temp_func_sign {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    pub fn externalcall_infallback(&self) -> bool {
+        for key in self.contracts.keys() {
+            if self.contracts[key].level == 0 {
+                let temp_address = key.split("_").collect::<Vec<&str>>()[2];
+                let temp_func_sign = key.split("_").collect::<Vec<&str>>()[3];
+                let mut df = Vec::new();
+                if let Err(err) = self.read_csv::<data_structure::ExternalCallInFallback>(
+                    &format!(
+                        "{}{}/out/Leslie_ExternalCallInFallback.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut df,
+                ) {
+                    error!("Error reading CSV: {}", err);
+                }
+                for externalcall_infallback in df {
+                    if externalcall_infallback.func_sign == temp_func_sign {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // reentrancy related
+    pub fn double_call_to_same_contract(&self) -> bool {
+        for key in self.contracts.keys() {
+            if self.contracts[key].level == 0 {
+                let temp_address = key.split("_").collect::<Vec<&str>>()[2];
+                let temp_func_sign = key.split("_").collect::<Vec<&str>>()[3];
+                let mut df = Vec::new();
+                if let Err(err) = self.read_csv::<data_structure::DoubleCallToSameContract>(
+                    &format!(
+                        "{}{}/out/Leslie_DoubleCallToSameContract.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut df,
+                ) {
+                    error!("Error reading CSV: {}", err);
+                }
+                for double_call_to_same_contract in df {
+                    if double_call_to_same_contract.func_sign == temp_func_sign {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    pub fn double_call_to_same_contract_by_storage(&self) -> bool {
+        for key in self.contracts.keys() {
+            if self.contracts[key].level == 0 {
+                let temp_address = key.split("_").collect::<Vec<&str>>()[2];
+                let temp_func_sign = key.split("_").collect::<Vec<&str>>()[3];
+                let mut df = Vec::new();
+                if let Err(err) = self
+                    .read_csv::<data_structure::DoubleCallToSameContractByStorage>(
+                        &format!(
+                            "{}{}/out/Leslie_DoubleCallToSameContractByStorage.csv",
+                            TEMP_PATH, temp_address
+                        ),
+                        &mut df,
+                    )
+                {
+                    error!("Error reading CSV: {}", err);
+                }
+                for double_call_to_same_contract_by_storage in df {
+                    if double_call_to_same_contract_by_storage.func_sign == temp_func_sign {
                         return true;
                     }
                 }
@@ -911,8 +1041,30 @@ impl<'a> FlowAnalysis<'a> {
             }
         }
 
-        // self.victim_callback_info = victim_callback_info;
-        // self.attack_reenter_info = attack_reenter_info;
+        if self.double_call_to_same_contract() || self.double_call_to_same_contract_by_storage() {
+            self.attack_matrix.insert("reentrancy".to_string(), true);
+            result = true;
+        }
+
+        self.victim_callback_info = victim_callback_info;
+        self.attack_reenter_info = attacker_reenter_info;
         (result, self.attack_matrix.clone())
+    }
+
+    pub fn get_reen_info(
+        &self,
+    ) -> (
+        &HashMap<String, Vec<ReachableSiteInfo>>,
+        &HashMap<String, Vec<ReenterInfo>>,
+    ) {
+        (&self.victim_callback_info, &self.attack_reenter_info)
+    }
+
+    pub fn get_sig_info(&self) -> &Vec<String> {
+        &self.sensitive_callsigns
+    }
+
+    pub fn get_attack_matrix(&self) -> &HashMap<String, bool> {
+        &self.attack_matrix
     }
 }

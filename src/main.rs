@@ -6,7 +6,7 @@ use crate::flow::flow_analysis::FlowAnalysis;
 mod graph;
 use crate::graph::call_graph::CallGraph;
 use crate::outputter::result_structure::{
-    ExternalCall, OpCreation, Overlap, Result, SemanticFeatures,
+    ExternalCall, OpCreation, Overlap, PathInfo, Result, SemanticFeatures,
 };
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled, Level};
@@ -74,7 +74,7 @@ async fn main() {
         external_call_in_func_signature
     );
 
-    let external_call_in_func_signature = external_call_in_func_signature.clone();
+    let mut external_call_in_func_signature = external_call_in_func_signature.clone();
 
     let mut visited_contracts: HashSet<String> = HashSet::new();
     let mut visited_funcs: HashSet<String> = HashSet::new();
@@ -82,8 +82,39 @@ async fn main() {
     let mut call_path: Vec<String> = Vec::new();
     let mut max_call_depth: i32 = 0;
 
+    let is_createbin = input_contract.is_createbin().clone();
+
     let mut contracts = HashMap::new();
     if input_contract.is_createbin().clone() {
+        let source = Source {
+            platform: platform.to_string(),
+            logic_addr: logic_address.clone(),
+            storage_addr: storage_address.clone(),
+            func_sign: "__function_selector__".to_string(),
+            block_number: 16000000,
+            caller: "msg.sender".to_string(),
+            caller_func_sign: "".to_string(),
+            call_site: "".to_string(),
+            level: 0,
+        };
+        let mut cross_contract_call_graph = CallGraph::new(platform.to_string(), &mut contracts);
+
+        if let Err(e) = cross_contract_call_graph
+            .construct_cross_contract_call_graph(source)
+            .await
+        {
+            eprintln!("An error occurred during call graph construction: {}", e);
+        };
+        let call_graph_str: &str = cross_contract_call_graph.get_output();
+        visited_contracts.extend(cross_contract_call_graph.get_visited_contracts().clone());
+        visited_funcs.extend(cross_contract_call_graph.get_visited_funcs().clone());
+
+        if cross_contract_call_graph.max_level > max_call_depth {
+            max_call_depth = cross_contract_call_graph.max_level;
+        }
+
+        call_path.push(format!("{}\n", call_graph_str));
+        println!("{}", call_graph_str);
     } else {
         for func_sign in external_call_in_func_signature.clone().into_iter() {
             // let mut contracts_mut = contracts.borrow_mut();
@@ -127,7 +158,7 @@ async fn main() {
         attack_matrix: HashMap::new(),
         analysis_loc: String::new(),
         platform: String::from("ETH"),
-        block_number: 16000000, // Assuming block_number is provided elsewhere in the code
+        block_number: 16000000,
         time: None,
         semantic_features: SemanticFeatures {
             op_creation: OpCreation {
@@ -154,13 +185,13 @@ async fn main() {
             has_overlap: false,
             overlap_external_call: Vec::new(),
         },
-        reentrancy_path_info: std::collections::HashMap::new(),
+        reentrancy_path_info: HashMap::new(),
     };
 
     let mut detector = FlowAnalysis::new(
         &contracts,
         func_sign_list.clone(),
-        external_call_in_func_signature,
+        external_call_in_func_signature.clone(),
         visited_contracts,
         visited_funcs,
     );
@@ -175,10 +206,84 @@ async fn main() {
     result.visited_funcs = detector.visited_funcs.clone().drain().collect();
     result.visited_funcs_num = result.visited_funcs.len();
 
-    let serialized = serde_json::to_string_pretty(&result).unwrap();
+    result.semantic_features.op_creation.op_multicreate = detector.op_multicreate_analysis();
+    result.semantic_features.op_creation.op_solecreate = detector.op_solecreate_analysis();
+    result.semantic_features.op_selfdestruct = detector.op_selfdestruct_analysis();
+    result.semantic_features.op_env = detector.tainted_env_call_arg();
+
+    result.external_call.externalcall_inhook = detector.externalcall_inhook();
+    result.external_call.externalcall_infallback = detector.externalcall_infallback();
+
+    result.sensitive_callsigs = detector.get_sig_info().to_vec();
+    result.contract_funcsigs = func_sign_list.to_vec();
+    result.contract_funcsigs_external_call = external_call_in_func_signature.drain().collect();
+
+    let (victim_callback_info, attack_reenter_info) = detector.get_reen_info();
+    for (key, value) in victim_callback_info.iter() {
+        result.reentrancy_path_info.insert(
+            key.clone(),
+            PathInfo {
+                victim_call: value.clone(),
+                attacker_reenter: attack_reenter_info.get(key).unwrap_or(&Vec::new()).to_vec(),
+            },
+        );
+    }
+
+    let sensitive_callsigs_set: HashSet<_> = result.sensitive_callsigs.iter().cloned().collect();
+    let contract_funcsigs_external_call_set: HashSet<_> = result
+        .contract_funcsigs_external_call
+        .iter()
+        .cloned()
+        .collect();
+
+    let overlap: Vec<_> = sensitive_callsigs_set
+        .intersection(&contract_funcsigs_external_call_set)
+        .cloned()
+        .collect();
+
+    if !overlap.is_empty() {
+        result.overlap.has_overlap = true;
+        for item in overlap {
+            result.overlap.overlap_external_call.push(item);
+        }
+    }
+
+    // level warning
+    if result.semantic_features.op_creation.op_multicreate
+        || result.semantic_features.op_creation.op_solecreate
+        || result.semantic_features.op_selfdestruct
+        || result.semantic_features.op_env
+    {
+        result.warning = "high".to_string();
+    }
+    // just has overlap, lift the warning
+    if result.overlap.has_overlap {
+        result.warning = "high".to_string();
+    }
+
+    if result.external_call.externalcall_inhook || result.external_call.externalcall_infallback {
+        result.warning = "high".to_string();
+    }
+
+    if is_createbin {
+        result.analysis_loc = "createbin".to_string();
+    } else {
+        result.analysis_loc = "runtimebin".to_string();
+    }
+
+    let duration = start.elapsed();
+    result.time = format!(
+        "{}.{:09} seconds",
+        duration.as_secs(),
+        duration.subsec_nanos()
+    )
+    .into();
+    let mut res: HashMap<String, Result> = HashMap::new();
+    res.insert(logic_address.clone(), result);
+
+    let serialized = serde_json::to_string_pretty(&res).unwrap();
     let mut file = File::create(format!("{}{}.json", JSON_PATH, logic_address)).unwrap();
     file.write(serialized.as_bytes()).unwrap();
 
-    let duration = start.elapsed();
     info!("analyze contract {} consumes {:?}", logic_address, duration);
 }
