@@ -11,13 +11,10 @@ use crate::outputter::result_structure::{
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled, Level};
 use serde_json;
-use std::borrow::BorrowMut;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::File;
 use std::io::Write;
-use std::rc::Rc;
 use std::time::Instant;
 
 const JSON_PATH: &str = "./output/";
@@ -79,17 +76,15 @@ async fn main() {
 
     let external_call_in_func_signature = external_call_in_func_signature.clone();
 
-    let visited_contracts: Vec<String> = Vec::new();
-    let visited_funcs: Vec<String> = Vec::new();
+    let mut visited_contracts: HashSet<String> = HashSet::new();
+    let mut visited_funcs: HashSet<String> = HashSet::new();
 
     let mut call_path: Vec<String> = Vec::new();
-    // let m_call_depth: u32 = 0;
-    // let call_graph_str: String = String::new();
+    let mut max_call_depth: i32 = 0;
 
     let mut contracts = HashMap::new();
     if input_contract.is_createbin().clone() {
     } else {
-        let mut max_call_depth: u32 = 0;
         for func_sign in external_call_in_func_signature.clone().into_iter() {
             // let mut contracts_mut = contracts.borrow_mut();
             println!("{}", func_sign);
@@ -113,7 +108,14 @@ async fn main() {
             {
                 eprintln!("An error occurred during call graph construction: {}", e);
             };
-            let call_graph_str = cross_contract_call_graph.get_output();
+            let call_graph_str: &str = cross_contract_call_graph.get_output();
+            visited_contracts.extend(cross_contract_call_graph.get_visited_contracts().clone());
+            visited_funcs.extend(cross_contract_call_graph.get_visited_funcs().clone());
+
+            if cross_contract_call_graph.max_level > max_call_depth {
+                max_call_depth = cross_contract_call_graph.max_level;
+            }
+
             call_path.push(call_graph_str.to_string());
             println!("{}", call_graph_str);
         }
@@ -138,10 +140,6 @@ async fn main() {
         external_call: ExternalCall {
             externalcall_inhook: false,
             externalcall_infallback: false,
-            hooks_focused: vec![
-                "tokensReceived".to_string(),
-                // ... add other strings here
-            ],
         },
         call_paths: Vec::new(),
         visited_contracts: Vec::new(),
@@ -171,6 +169,11 @@ async fn main() {
     result.is_attack = res_bool;
     result.attack_matrix = res;
     result.call_paths = call_path;
+    result.max_call_depth = max_call_depth as u32;
+    result.visited_contracts = detector.visited_contracts.clone().drain().collect();
+    result.visited_contracts_num = result.visited_contracts.len();
+    result.visited_funcs = detector.visited_funcs.clone().drain().collect();
+    result.visited_funcs_num = result.visited_funcs.len();
 
     let serialized = serde_json::to_string_pretty(&result).unwrap();
     let mut file = File::create(format!("{}{}.json", JSON_PATH, logic_address)).unwrap();

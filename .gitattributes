@@ -1,4 +1,3 @@
 gigahorse-toolchain/* linguist-vendored
 
-*.html linguist-language=Rust
-*.py linguist-language=Rust
+*.html linguist-vendored

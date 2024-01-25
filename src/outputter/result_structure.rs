@@ -42,7 +42,7 @@ pub struct OpCreation {
 pub struct ExternalCall {
     pub externalcall_inhook: bool,
     pub externalcall_infallback: bool,
-    pub hooks_focused: Vec<String>,
+    // pub hooks_focused: Vec<String>,
 }
 #[derive(Serialize, Deserialize)]
 pub struct Overlap {

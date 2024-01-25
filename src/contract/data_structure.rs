@@ -163,7 +163,7 @@ impl From<StringRecord> for SensitiveOpOfBadRandomnessAfterExternalCall {
 
 pub struct SensitiveOpOfDoSAfterExternalCall {
     pub func_sign: String,
-    pub call_stm: String,
+    pub call_stmt: String,
     pub call_ret_var: String,
     pub call_ret_index: String,
     pub sensitive_var: String,
@@ -174,7 +174,7 @@ impl From<StringRecord> for SensitiveOpOfDoSAfterExternalCall {
         // Parse and create SensitiveOpOfDoSAfterExternalCall
         SensitiveOpOfDoSAfterExternalCall {
             func_sign: record[0].to_string(),
-            call_stm: record[1].to_string(),
+            call_stmt: record[1].to_string(),
             call_ret_var: record[2].to_string(),
             call_ret_index: record[3].to_string(),
             sensitive_var: record[4].to_string(),
@@ -196,6 +196,144 @@ impl From<StringRecord> for TaintedCallArg {
             func_sign: record[0].to_string(),
             call_stmt: record[1].to_string(),
             call_arg_index: record[2].to_string(),
+        }
+    }
+}
+
+pub struct FuncArgToSensitiveVar {
+    pub func_sign: String,
+    pub call_stmt: String,
+    pub func_arg: String,
+    pub func_arg_index: String,
+    pub sensitive_var: String,
+    pub call_func_sign: String,
+}
+
+impl From<StringRecord> for FuncArgToSensitiveVar {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create FuncArgToSensitiveVar
+        FuncArgToSensitiveVar {
+            func_sign: record[0].to_string(),
+            call_stmt: record[1].to_string(),
+            func_arg: record[2].to_string(),
+            func_arg_index: record[3].to_string(),
+            sensitive_var: record[4].to_string(),
+            call_func_sign: record[5].to_string(),
+        }
+    }
+}
+
+pub struct CallRetToFuncRet {
+    pub call_stmt: String,
+    pub call_ret: String,
+    pub call_ret_index: String,
+    pub func_sign: String,
+    pub func_ret_index: String,
+    pub func_ret: String,
+}
+
+impl From<StringRecord> for CallRetToFuncRet {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SpreadCallRetToFuncRet
+        CallRetToFuncRet {
+            call_stmt: record[0].to_string(),
+            call_ret: record[1].to_string(),
+            call_ret_index: record[2].to_string(),
+            func_sign: record[3].to_string(),
+            func_ret_index: record[4].to_string(),
+            func_ret: record[5].to_string(),
+        }
+    }
+}
+
+pub struct CallRetToCallArg {
+    pub call_stmt1: String,
+    pub call_ret: String,
+    pub call_ret_index: String,
+    pub call_stmt2: String,
+    pub call_arg_index: String,
+    pub call_arg: String,
+}
+
+impl From<StringRecord> for CallRetToCallArg {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SpreadCallRetToCallArg
+        CallRetToCallArg {
+            call_stmt1: record[0].to_string(),
+            call_ret: record[1].to_string(),
+            call_ret_index: record[2].to_string(),
+            call_stmt2: record[3].to_string(),
+            call_arg_index: record[4].to_string(),
+            call_arg: record[5].to_string(),
+        }
+    }
+}
+
+pub struct CallArgs {
+    pub call_stmt: String,
+    pub call_arg_index: String,
+}
+
+pub struct FuncArgToCallArg {
+    pub func_sign: String,
+    pub func_arg_index: String,
+    pub func_arg: String,
+    pub call_stmt: String,
+    pub call_arg_index: String,
+    pub call_arg: String,
+}
+
+impl From<StringRecord> for FuncArgToCallArg {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SpreadFuncArgToCallArg
+        FuncArgToCallArg {
+            func_sign: record[0].to_string(),
+            func_arg_index: record[1].to_string(),
+            func_arg: record[2].to_string(),
+            call_stmt: record[3].to_string(),
+            call_arg_index: record[4].to_string(),
+            call_arg: record[5].to_string(),
+        }
+    }
+}
+
+pub struct FuncArgToCallee {
+    pub func_sign: String,
+    pub func_arg_index: String,
+    pub func_arg: String,
+    pub call_stmt: String,
+    pub call_arg_index: String,
+}
+impl From<StringRecord> for FuncArgToCallee {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SpreadFuncArgToCallee
+        FuncArgToCallee {
+            func_sign: record[0].to_string(),
+            func_arg_index: record[1].to_string(),
+            func_arg: record[2].to_string(),
+            call_stmt: record[3].to_string(),
+            call_arg_index: record[4].to_string(),
+        }
+    }
+}
+
+pub struct FuncArgToFuncRet {
+    pub func_sign: String,
+    pub func_arg_index: String,
+    pub func_arg: String,
+    pub func_ret_index: String,
+    pub func_ret: String,
+}
+
+impl From<StringRecord> for FuncArgToFuncRet {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create SpreadFuncArgToFuncRet
+        FuncArgToFuncRet {
+            func_sign: record[0].to_string(),
+            func_arg_index: record[1].to_string(),
+            func_arg: record[2].to_string(),
+            func_ret_index: record[3].to_string(),
+            func_ret: record[4].to_string(),
         }
     }
 }
