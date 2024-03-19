@@ -1,0 +1,61 @@
+#include "../clientlib/decompiler_imports.dl"
+#include "../clientlib/loops_semantics.dl"
+#include "../clientlib/guards.dl"
+#include "../clientlib/vulnerability_macros.dl"
+
+.decl SCS_Statement_Function(stmt:Statement, func:Function)
+SCS_Statement_Function(stmt, func) :-
+  Statement_Function(stmt, func).
+
+SCS_Statement_Function(stmt, caller) :-
+  InFunction(block, caller),
+  CallGraphEdge(block, callee),
+  SCS_Statement_Function(stmt, callee).
+
+.decl SCS_FunctionSelector(func: Function, funcSign: symbol)
+.output SCS_FunctionSelector
+SCS_FunctionSelector(func, funcSign) :-
+  PublicFunctionSelector(func, funcSign).
+
+// Leslie_FunctionSelector(func, funcSign) :-
+//   HighLevelFunctionName(func, funcSign),
+//   funcSign = "__function_selector__".
+
+.decl SCS_ExternalCallInfo(func:Function, callStmt:Statement, callOp:Opcode, calleeVar:Variable, numArg:number, numRet:number)
+.output SCS_ExternalCallInfo
+SCS_ExternalCallInfo(func, callStmt, callOp, calleeVar, numArg, numRet) :-
+  SCS_FunctionSelector(func, _),
+  SCS_Statement_Function(callStmt, func),
+  (CALL(callStmt, _, calleeVar, _, _, _, _, _, _);STATICCALL(callStmt, _, calleeVar, _, _, _, _, _);DELEGATECALL(callStmt, _, calleeVar, _, _, _, _, _)),
+  Statement_Opcode(callStmt, callOp),
+  ExternalCall_NumOfArgs(callStmt, numArg),
+  numRet = count: ExternalCall_ActualReturn(callStmt, _, _).
+
+.decl SCS_TransferEtherCallInfo(func:Function, callStmt:Statement, calleeVar:Variable)
+.output SCS_TransferEtherCallInfo
+SCS_TransferEtherCallInfo(func, callStmt, calleeVar) :-
+  SCS_FunctionSelector(func, _),
+  SCS_Statement_Function(callStmt, func),
+  !StatementUsesMemory_ActualMemoryArg(callStmt, _, _, _),
+  CALL(callStmt, _, calleeVar, _, _, _, _, _, _).
+
+.decl SCS_ExternalERC20CallInfo(func:Function, callStmt:Statement, callOp:Opcode, calleeVar:Variable, numArg:number, numRet:number)
+.output SCS_ExternalERC20CallInfo
+SCS_ExternalERC20CallInfo(func, callStmt, callOp, calleeVar, numArg, numRet) :-
+  SCS_FunctionSelector(func, _),
+  SCS_Statement_Function(callStmt, func),
+  StatementUsesMemory_ActualMemoryArg(callStmt, _, 0, callFuncSigVar),
+  Variable_Value(callFuncSigVar,callFuncSig),
+  (CALL(callStmt, _, calleeVar, _, _, _, _, _, _);STATICCALL(callStmt, _, calleeVar, _, _, _, _, _);DELEGATECALL(callStmt, _, calleeVar, _, _, _, _, _)),
+  Statement_Opcode(callStmt, callOp),
+  ExternalCall_NumOfArgs(callStmt, numArg),
+  numRet = count: ExternalCall_ActualReturn(callStmt, _, _),
+  (callFuncSig = "transfer(address,uint256)";
+  callFuncSig = "transferFrom(address,address,uint256)";
+  callFuncSig = "approve(address,uint256)";
+  callFuncSig = "allowance(address,address)";
+  callFuncSig = "balanceOf(address)";
+  callFuncSig = "name()";
+  callFuncSig = "symbol()";
+  callFuncSig = "decimals()";
+  callFuncSig = "totalSupply()").
