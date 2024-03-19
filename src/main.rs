@@ -156,7 +156,7 @@ async fn main() {
     } else {
         for func_sign in external_call_in_func_signature.clone().into_iter() {
             // let mut contracts_mut = contracts.borrow_mut();
-            println!("{}", func_sign);
+            println!("call flow originated from function {}", func_sign);
             let source = Source {
                 platform: platform.to_string(),
                 logic_addr: logic_address.to_string(),
@@ -316,6 +316,7 @@ async fn main() {
         duration.subsec_nanos()
     )
     .into();
+    println!("{:?}", result);
     let mut res: HashMap<String, Result> = HashMap::new();
     res.insert(logic_address.to_string(), result);
 

@@ -33,16 +33,17 @@ impl<'a> CallGraph<'a> {
         &self.visited_funcs
     }
 
+    #[allow(unused_variables)]
     pub async fn construct_cross_contract_call_graph(
         &mut self,
         source: Source,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut pending = vec![source];
-        println!("{:?}", pending);
+        // println!("{:?}", pending);
         while let Some(temp) = pending.pop() {
             let index = pending.len();
-            println!("pending length: {}", index);
-            println!("current temp contract: {}", temp.logic_addr);
+            // println!("pending length: {}", index);
+            // println!("current temp contract: {}", temp.logic_addr);
             if temp.level > self.max_level {
                 self.max_level = temp.level;
             }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::flow::flow_analysis::{ReachableSiteInfo, ReenterInfo};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Result {
     pub is_attack: bool,
     pub warning: String,
@@ -28,31 +28,31 @@ pub struct Result {
     pub reentrancy_path_info: HashMap<String, PathInfo>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SemanticFeatures {
     pub op_creation: OpCreation,
     pub op_selfdestruct: bool,
     pub op_env: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct OpCreation {
     pub op_multicreate: bool,
     pub op_solecreate: bool,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ExternalCall {
     pub externalcall_inhook: bool,
     pub externalcall_infallback: bool,
     // pub hooks_focused: Vec<String>,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Overlap {
     pub has_overlap: bool,
     pub overlap_external_call: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PathInfo {
     pub victim_call: Vec<ReachableSiteInfo>,
     pub attacker_reenter: Vec<ReenterInfo>,
