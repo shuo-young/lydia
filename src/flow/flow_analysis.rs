@@ -6,9 +6,8 @@ use crate::contract::data_structure::{
     self, CallArgs, ExternalCall, FuncArgToSensitiveVar, TaintedCallArg,
 };
 use csv::{ReaderBuilder, StringRecord};
-use log::{error, info};
+use log::error;
 use serde::{Deserialize, Serialize};
-const OUTPUT_PATH: &str = "./gigahorse-toolchain/";
 const TEMP_PATH: &str = "./gigahorse-toolchain/.temp/";
 
 #[derive(Debug, Clone)]
@@ -34,6 +33,7 @@ pub struct ReenterInfo {
     reenter_func_sign: String,
 }
 
+#[allow(dead_code)]
 pub struct FlowAnalysis<'a> {
     contracts: &'a HashMap<String, Contract>,
     main_contract_sign_list: Vec<String>,
@@ -47,6 +47,7 @@ pub struct FlowAnalysis<'a> {
     attack_reenter_info: HashMap<String, Vec<ReenterInfo>>,
 }
 
+#[allow(dead_code)]
 impl<'a> FlowAnalysis<'a> {
     pub fn new(
         contracts: &'a HashMap<String, Contract>,
@@ -353,6 +354,32 @@ impl<'a> FlowAnalysis<'a> {
                 }
                 for double_call_to_same_contract_by_storage in df {
                     if double_call_to_same_contract_by_storage.func_sign == temp_func_sign {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        return false;
+    }
+
+    pub fn preset_call_in_standard_erc20_transfer(&self) -> bool {
+        for key in self.contracts.keys() {
+            if self.contracts[key].level == 0 {
+                let temp_address = key.split("_").collect::<Vec<&str>>()[2];
+                let temp_func_sign = key.split("_").collect::<Vec<&str>>()[3];
+                let mut df = Vec::new();
+                if let Err(err) = self.read_csv::<data_structure::CallInStandardTransfer>(
+                    &format!(
+                        "{}{}/out/Leslie_CallInStandardTransfer.csv",
+                        TEMP_PATH, temp_address
+                    ),
+                    &mut df,
+                ) {
+                    error!("Error reading CSV: {}", err);
+                }
+                for call_in_standard_erc20_transfer in df {
+                    if call_in_standard_erc20_transfer.func_sign == temp_func_sign {
                         return true;
                     }
                 }
@@ -1041,7 +1068,10 @@ impl<'a> FlowAnalysis<'a> {
             }
         }
 
-        if self.double_call_to_same_contract() || self.double_call_to_same_contract_by_storage() {
+        if self.double_call_to_same_contract()
+            || self.double_call_to_same_contract_by_storage()
+            || self.preset_call_in_standard_erc20_transfer()
+        {
             self.attack_matrix.insert("reentrancy".to_string(), true);
             result = true;
         }

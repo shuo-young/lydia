@@ -8,11 +8,12 @@ use crate::graph::call_graph::CallGraph;
 use crate::outputter::result_structure::{
     ExternalCall, OpCreation, Overlap, PathInfo, Result, SemanticFeatures,
 };
+use clap::{App, Arg};
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled, Level};
 use serde_json;
 use std::collections::{HashMap, HashSet};
-use std::env;
+
 use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
@@ -36,25 +37,62 @@ struct Source {
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        panic!("Not enough arguments. Usage: program platform logic_address [storage_address]");
-    }
+    let matches = App::new("Lydia")
+        .version("1.0")
+        .author("Shuo Yang <yangsh233@mail2.sysu.edu.cn>")
+        .about("Finding Attacker Contracts with Malicious Intents")
+        .arg(
+            Arg::with_name("blockchain_platform")
+                .short('b')
+                .long("blockchain_platform")
+                .value_name("PLATFORM")
+                .help("The blockchain platform where the test contract is deployed")
+                .takes_value(true)
+                .default_value("ETH"),
+        )
+        .arg(
+            Arg::with_name("logic_address")
+                .short('l')
+                .long("logic_address")
+                .value_name("LOGIC_ADDR")
+                .help("Contract address for storing business logic")
+                .takes_value(true)
+                .required(true), // Assume it's required as there is no default value
+        )
+        .arg(
+            Arg::with_name("storage_address")
+                .short('s')
+                .long("storage_address")
+                .value_name("STORAGE_ADDR")
+                .help("Contract address for storing business data")
+                .takes_value(true), // .default_value(""), // Assuming default is an empty string
+        )
+        .arg(
+            Arg::with_name("block_number")
+                .short('n')
+                .long("block_number")
+                .value_name("BLOCK_NUMBER")
+                .help("Blockchain snapshot block number")
+                .takes_value(true)
+                .default_value("16000000"),
+        )
+        .get_matches();
 
-    let platform = &args[1];
-    let logic_address = &args[2];
-    let storage_address = args.get(3).unwrap_or(logic_address);
+    let platform = matches.value_of("blockchain_platform").unwrap();
+    let logic_address = matches.value_of("logic_address").unwrap();
+    let storage_address = matches.value_of("storage_address").unwrap_or(logic_address);
+    let block_number = matches.value_of("block_number").unwrap();
     info!("input contract logic address {}", logic_address);
     info!("input contract storage address {}", storage_address);
     info!("contract blockchain platform {}", platform);
     let start = Instant::now();
 
     let mut input_contract = Contract::new(
-        platform.to_string(),
-        logic_address.to_string(),
-        storage_address.to_string(),
+        String::from(platform),
+        String::from(logic_address),
+        String::from(storage_address),
         "".to_string(), // which function to test, leave blank to test all functions
-        16000000,
+        block_number.parse::<u64>().unwrap(),
         "msg.sender".to_string(), // set caller
         "".to_string(),           // the call sites in this contract's function (intput)
         0,
@@ -88,8 +126,8 @@ async fn main() {
     if input_contract.is_createbin().clone() {
         let source = Source {
             platform: platform.to_string(),
-            logic_addr: logic_address.clone(),
-            storage_addr: storage_address.clone(),
+            logic_addr: logic_address.to_string(),
+            storage_addr: storage_address.to_string(),
             func_sign: "__function_selector__".to_string(),
             block_number: 16000000,
             caller: "msg.sender".to_string(),
@@ -121,8 +159,8 @@ async fn main() {
             println!("{}", func_sign);
             let source = Source {
                 platform: platform.to_string(),
-                logic_addr: logic_address.clone(),
-                storage_addr: storage_address.clone(),
+                logic_addr: logic_address.to_string(),
+                storage_addr: storage_address.to_string(),
                 func_sign,
                 block_number: 16000000,
                 caller: "msg.sender".to_string(),
@@ -279,7 +317,7 @@ async fn main() {
     )
     .into();
     let mut res: HashMap<String, Result> = HashMap::new();
-    res.insert(logic_address.clone(), result);
+    res.insert(logic_address.to_string(), result);
 
     let serialized = serde_json::to_string_pretty(&res).unwrap();
     let mut file = File::create(format!("{}{}.json", JSON_PATH, logic_address)).unwrap();

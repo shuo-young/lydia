@@ -465,3 +465,20 @@ impl From<StringRecord> for DoubleCallToSameContractByStorage {
         }
     }
 }
+
+pub struct CallInStandardTransfer {
+    pub func_sign: String,
+    pub call_stmt: String,
+    pub storage_slot: String,
+}
+
+impl From<StringRecord> for CallInStandardTransfer {
+    fn from(record: StringRecord) -> Self {
+        // Parse and create Leslie_CallInStandardTransfer
+        CallInStandardTransfer {
+            func_sign: record[0].to_string(),
+            call_stmt: record[1].to_string(),
+            storage_slot: record[2].to_string(),
+        }
+    }
+}
