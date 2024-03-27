@@ -59,3 +59,5 @@ results.json
 
 # sqlite databases
 *.sqlite
+
+contracts/*.hex

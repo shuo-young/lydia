@@ -9,6 +9,7 @@ use csv::{ReaderBuilder, StringRecord};
 use log::error;
 use serde::{Deserialize, Serialize};
 const TEMP_PATH: &str = "./gigahorse-toolchain/.temp/";
+const ANALYSIS: &str = "Leslie";
 
 #[derive(Debug, Clone)]
 pub struct ProgramPoint {
@@ -96,8 +97,8 @@ impl<'a> FlowAnalysis<'a> {
                 if let Err(err) = self
                     .read_csv::<data_structure::SensitiveOpOfBadRandomnessAfterExternalCall>(
                         &format!(
-                            "{}{}/out/Leslie_SensitiveOpOfBadRandomnessAfterExternalCall.csv",
-                            TEMP_PATH, temp_address
+                            "{}{}/out/{}_SensitiveOpOfBadRandomnessAfterExternalCall.csv",
+                            TEMP_PATH, temp_address, ANALYSIS
                         ),
                         &mut br_analysis_df,
                     )
@@ -124,8 +125,8 @@ impl<'a> FlowAnalysis<'a> {
                 if let Err(err) = self
                     .read_csv::<data_structure::SensitiveOpOfDoSAfterExternalCall>(
                         &format!(
-                            "{}{}/out/Leslie_SensitiveOpOfDoSAfterExternalCall.csv",
-                            TEMP_PATH, temp_address
+                            "{}{}/out/{}_SensitiveOpOfDoSAfterExternalCall.csv",
+                            TEMP_PATH, temp_address, ANALYSIS
                         ),
                         &mut dos_analysis_df,
                     )
@@ -152,8 +153,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::EnvVarFlowsToTaintedVar>(
                     &format!(
-                        "{}{}/out/Leslie_EnvVarFlowsToTaintedVar.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_EnvVarFlowsToTaintedVar.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut df,
                 ) {
@@ -182,8 +183,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut op_multicreate_analysis_df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::OpCreateInLoop>(
                     &format!(
-                        "{}{}/out/Leslie_Op_CreateInLoop.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_Op_CreateInLoop.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut op_multicreate_analysis_df,
                 ) {
@@ -210,7 +211,7 @@ impl<'a> FlowAnalysis<'a> {
                 }
                 let mut op_solecreate_analysis_df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::OpSoleCreate>(
-                    &format!("{}{}/out/Leslie_Op_SoleCreate.csv", TEMP_PATH, temp_address),
+                    &format!("{}{}/out/{}_Op_SoleCreate.csv", TEMP_PATH, temp_address, ANALYSIS),
                     &mut op_solecreate_analysis_df,
                 ) {
                     error!("Error reading CSV: {}", err);
@@ -237,8 +238,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut op_selfdestruct_analysis_df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::OpSelfdestruct>(
                     &format!(
-                        "{}{}/out/Leslie_Op_Selfdestruct.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_Op_Selfdestruct.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut op_selfdestruct_analysis_df,
                 ) {
@@ -264,8 +265,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::ExternalCallInHook>(
                     &format!(
-                        "{}{}/out/Leslie_ExternalCallInHook.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_ExternalCallInHook.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut df,
                 ) {
@@ -290,8 +291,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::ExternalCallInFallback>(
                     &format!(
-                        "{}{}/out/Leslie_ExternalCallInFallback.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_ExternalCallInFallback.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut df,
                 ) {
@@ -317,8 +318,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::DoubleCallToSameContract>(
                     &format!(
-                        "{}{}/out/Leslie_DoubleCallToSameContract.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_DoubleCallToSameContract.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut df,
                 ) {
@@ -344,8 +345,8 @@ impl<'a> FlowAnalysis<'a> {
                 if let Err(err) = self
                     .read_csv::<data_structure::DoubleCallToSameContractByStorage>(
                         &format!(
-                            "{}{}/out/Leslie_DoubleCallToSameContractByStorage.csv",
-                            TEMP_PATH, temp_address
+                            "{}{}/out/{}_DoubleCallToSameContractByStorage.csv",
+                            TEMP_PATH, temp_address, ANALYSIS
                         ),
                         &mut df,
                     )
@@ -371,8 +372,8 @@ impl<'a> FlowAnalysis<'a> {
                 let mut df = Vec::new();
                 if let Err(err) = self.read_csv::<data_structure::CallInStandardTransfer>(
                     &format!(
-                        "{}{}/out/Leslie_CallInStandardTransfer.csv",
-                        TEMP_PATH, temp_address
+                        "{}{}/out/{}_CallInStandardTransfer.csv",
+                        TEMP_PATH, temp_address, ANALYSIS
                     ),
                     &mut df,
                 ) {
@@ -400,8 +401,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut call_ret_func_ret_df = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::CallRetToFuncRet>(
             &format!(
-                "{}{}/out/Leslie_Spread_CallRetToFuncRet.csv",
-                TEMP_PATH, contract_address
+                "{}{}/out/{}_Spread_CallRetToFuncRet.csv",
+                TEMP_PATH, contract_address, ANALYSIS
             ),
             &mut call_ret_func_ret_df,
         ) {
@@ -429,8 +430,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut call_ret_call_arg_df = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::CallRetToCallArg>(
             &format!(
-                "{}{}/out/Leslie_Spread_CallRetToCallArg.csv",
-                TEMP_PATH, contract_address
+                "{}{}/out/{}_Spread_CallRetToCallArg.csv",
+                TEMP_PATH, contract_address, ANALYSIS
             ),
             &mut call_ret_call_arg_df,
         ) {
@@ -460,8 +461,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut func_arg_call_arg_df = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::FuncArgToCallArg>(
             &format!(
-                "{}{}/out/Leslie_Spread_FuncArgToCallArg.csv",
-                TEMP_PATH, contract_address
+                "{}{}/out/{}_Spread_FuncArgToCallArg.csv",
+                TEMP_PATH, contract_address, ANALYSIS
             ),
             &mut func_arg_call_arg_df,
         ) {
@@ -491,8 +492,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut func_arg_callee_df = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::FuncArgToCallee>(
             &format!(
-                "{}{}/out/Leslie_Spread_FuncArgToCalleeVar.csv",
-                TEMP_PATH, contract_address
+                "{}{}/out/{}_Spread_FuncArgToCalleeVar.csv",
+                TEMP_PATH, contract_address, ANALYSIS
             ),
             &mut func_arg_callee_df,
         ) {
@@ -522,8 +523,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut func_arg_func_ret_df = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::FuncArgToFuncRet>(
             &format!(
-                "{}{}/out/Leslie_Spread_CallRetToFuncRet.csv",
-                TEMP_PATH, contract_address
+                "{}{}/out/{}_Spread_CallRetToFuncRet.csv",
+                TEMP_PATH, contract_address, ANALYSIS
             ),
             &mut func_arg_func_ret_df,
         ) {
@@ -621,8 +622,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut tainted_call_arg_df = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::TaintedCallArg>(
             &format!(
-                "{}{}/out/Leslie_TaintedCallArg.csv",
-                TEMP_PATH, contract_addr
+                "{}{}/out/{}_TaintedCallArg.csv",
+                TEMP_PATH, contract_addr, ANALYSIS
             ),
             &mut tainted_call_arg_df,
         ) {
@@ -698,8 +699,8 @@ impl<'a> FlowAnalysis<'a> {
         let mut func_arg_to_sensitive_var_df: Vec<FuncArgToSensitiveVar> = Vec::new();
         if let Err(err) = self.read_csv::<data_structure::FuncArgToSensitiveVar>(
             &format!(
-                "{}{}/out/Leslie_FuncArgToSensitiveVar.csv",
-                TEMP_PATH, contract_addr
+                "{}{}/out/{}_FuncArgToSensitiveVar.csv",
+                TEMP_PATH, contract_addr, ANALYSIS
             ),
             &mut func_arg_to_sensitive_var_df,
         ) {

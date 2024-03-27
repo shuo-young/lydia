@@ -20,6 +20,7 @@ use super::data_structure::ExternalCallData;
 const CONTRACT_PATH: &str = "./gigahorse-toolchain/contracts/";
 const CONTRACT_DIR: &str = "./contracts/";
 const TEMP_PATH: &str = "./gigahorse-toolchain/.temp/";
+const ANALYSIS: &str = "Leslie";
 
 #[derive(Debug)]
 enum ValueType {
@@ -144,9 +145,7 @@ impl Contract {
     fn set_url(&mut self) {
         self.url = match self.platform.as_str() {
             "ETH" => "https://go.getblock.io/f3866d56275945e2a8a0d6c5537331f4".to_string(),
-            "BSC" => {
-                "wss://bsc.getblock.io/6bf31e7d-f5b2-4860-8e15-aa9a11f6533d/mainnet/".to_string()
-            }
+            "BSC" => "https://go.getblock.io/3937fb5368654fe38d1736304fa584c3".to_string(),
             _ => "".to_string(),
         };
     }
@@ -249,32 +248,32 @@ impl Contract {
         // type1: constant callee written in the contract
         self.read_csv::<data_structure::ConstantCallee>(
             &format!(
-                "{}{}/out/Leslie_ExternalCall_Callee_ConstType.csv",
-                TEMP_PATH, self.logic_addr
+                "{}{}/out/{}_ExternalCall_Callee_ConstType.csv",
+                TEMP_PATH, self.logic_addr, ANALYSIS
             ),
             &mut constant_callee_df,
         )?;
         // type2: callee stored in the storage-type state variable
         self.read_csv::<data_structure::StorageCallee>(
             &format!(
-                "{}{}/out/Leslie_ExternalCall_Callee_StorageType.csv",
-                TEMP_PATH, self.logic_addr
+                "{}{}/out/{}_ExternalCall_Callee_StorageType.csv",
+                TEMP_PATH, self.logic_addr, ANALYSIS
             ),
             &mut storage_callee_df,
         )?;
         // type3: proxy callee stored in the storage-type state variable
         self.read_csv::<data_structure::ProxyStorageCallee>(
             &format!(
-                "{}{}/out/Leslie_ExternalCall_Callee_StorageType_ForProxy.csv",
-                TEMP_PATH, self.logic_addr
+                "{}{}/out/{}_ExternalCall_Callee_StorageType_ForProxy.csv",
+                TEMP_PATH, self.logic_addr, ANALYSIS
             ),
             &mut storage_callee_proxy_df,
         )?;
         // type4: callee flowed from function arguments
         self.read_csv::<data_structure::FuncArgCallee>(
             &format!(
-                "{}{}/out/Leslie_ExternalCall_Callee_FuncArgType.csv",
-                TEMP_PATH, self.logic_addr
+                "{}{}/out/{}_ExternalCall_Callee_FuncArgType.csv",
+                TEMP_PATH, self.logic_addr, ANALYSIS
             ),
             &mut func_arg_callee_df,
         )?;
@@ -303,16 +302,16 @@ impl Contract {
         // type1: constant func sign written in the contract
         self.read_csv::<data_structure::ConstantFuncSign>(
             &format!(
-                "{}{}/out/Leslie_ExternalCall_FuncSign_ConstType.csv",
-                TEMP_PATH, self.logic_addr
+                "{}{}/out/{}_ExternalCall_FuncSign_ConstType.csv",
+                TEMP_PATH, self.logic_addr, ANALYSIS
             ),
             &mut constant_func_sign_df,
         )?;
         // type2: proxy func sign
         self.read_csv::<data_structure::ProxyFuncSign>(
             &format!(
-                "{}{}/out/Leslie_ExternalCall_FuncSign_ProxyType.csv",
-                TEMP_PATH, self.logic_addr
+                "{}{}/out/{}_ExternalCall_FuncSign_ProxyType.csv",
+                TEMP_PATH, self.logic_addr, ANALYSIS
             ),
             &mut proxy_func_sign_df,
         )?;
@@ -353,8 +352,8 @@ impl Contract {
         debug!("Entering set_external_calls");
         // Process the first CSV file
         let loc_external_call = format!(
-            "{}{}/out/Leslie_ExternalCallInfo.csv",
-            TEMP_PATH, self.logic_addr
+            "{}{}/out/{}_ExternalCallInfo.csv",
+            TEMP_PATH, self.logic_addr, ANALYSIS
         );
         let mut external_calls_df: Vec<ExternalCallData> = Vec::<ExternalCallData>::new();
         match fs::metadata(&loc_external_call) {
@@ -493,7 +492,11 @@ impl Contract {
                 .constant_func_sign_df
                 .get(&external_call_data.call_stmt)
             {
-                external_call.target_func_sign = data.func_sign.clone()[..10].to_string();
+                if data.func_sign.clone().len() > 10 {
+                    external_call.target_func_sign = data.func_sign.clone()[..10].to_string();
+                } else {
+                    external_call.target_func_sign = data.func_sign.clone().to_string();
+                }
             }
 
             // if let Some(data) = self
@@ -508,8 +511,8 @@ impl Contract {
 
     fn set_func(&mut self) -> Result<(), Box<dyn Error>> {
         let loc = format!(
-            "{}{}/out/Leslie_FunctionSelector.csv",
-            TEMP_PATH, self.logic_addr
+            "{}{}/out/{}_FunctionSelector.csv",
+            TEMP_PATH, self.logic_addr, ANALYSIS
         );
 
         if fs::metadata(&loc).map(|m| m.len() > 0).unwrap_or(false) {
@@ -559,11 +562,12 @@ impl Contract {
         Ok(())
     }
 
+    // add env var as the known call arg values
     fn set_call_arg_vals(&mut self) -> Result<(), Box<dyn Error>> {
         if !self.caller.is_empty() {
             let loc = format!(
-                "{}{}/out/Leslie_ExternalCall_Known_Arg.csv",
-                TEMP_PATH, self.caller
+                "{}{}/out/{}_ExternalCall_Known_Arg.csv",
+                TEMP_PATH, self.caller, ANALYSIS
             );
 
             if fs::metadata(&loc).map(|m| m.len() > 0).unwrap_or(false) {

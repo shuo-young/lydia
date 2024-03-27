@@ -70,7 +70,7 @@ An Attacker Contract Identification Tool Implemented in Rust based on [BlockWatc
 
 -   gigahorse-toolchain
 
-    Lydia requires Gigahorse to be set up for analyzing EVM bytecode. To set up Gigahorse, refer to its [repository](https://github.com/nevillegrech/gigahorse-toolchain).
+    Lydia requires Gigahorse (commit da473f3) to be set up for analyzing EVM bytecode. To set up Gigahorse, refer to its [repository](https://github.com/nevillegrech/gigahorse-toolchain).
 
 <!-- <img align="left" width="213" src="logo.png"> -->
 

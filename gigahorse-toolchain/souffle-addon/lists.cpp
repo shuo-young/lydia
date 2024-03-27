@@ -75,7 +75,7 @@ extern "C" {
         std::list <souffle::RamDomain> l = {};
 
         while (1) {
-            l.push_back(myTuple1[0]);
+            l.push_front(myTuple1[0]);
             if (myTuple1[1] == 0)
                 break;
             myTuple1 = recordTable->unpack(myTuple1[1], 2);
