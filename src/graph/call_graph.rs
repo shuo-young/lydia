@@ -1,4 +1,4 @@
-use crate::{contract::contract::Contract, Source};
+use crate::{config::AnalysisSource, contract::contract::Contract};
 use std::collections::{HashMap, HashSet};
 #[allow(dead_code)]
 pub struct CallGraph<'a> {
@@ -36,7 +36,7 @@ impl<'a> CallGraph<'a> {
     #[allow(unused_variables)]
     pub async fn construct_cross_contract_call_graph(
         &mut self,
-        source: Source,
+        source: AnalysisSource,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut pending = vec![source];
         // println!("{:?}", pending);
@@ -99,7 +99,7 @@ impl<'a> CallGraph<'a> {
                     && !external_call.target_storage_addr.is_empty()
                     && !external_call.target_func_sign.is_empty()
                 {
-                    let source = Source {
+                    let source = AnalysisSource {
                         platform: temp.platform.clone(),
                         logic_addr: external_call.target_logic_addr.clone(),
                         storage_addr: external_call.target_storage_addr.clone(),
